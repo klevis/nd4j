@@ -66,7 +66,7 @@ public class Reverse extends BaseTransformOp {
 
     @Override
     public boolean isExecSpecial() {
-        return false;
+        return true;
     }
 
     @Override

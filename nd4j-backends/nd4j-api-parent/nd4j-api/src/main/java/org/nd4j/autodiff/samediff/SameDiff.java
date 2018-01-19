@@ -4675,22 +4675,23 @@ public class SameDiff {
                             updateArrayForVarName(var.getVarName(), accumulation.z());
                             updateShapeForVarName(var.getVarName(), accumulation.z().shape());
                         }
-                    } else if (differentialFunction instanceof BroadcastOp) {
+                    } else if(differentialFunction instanceof BroadcastOp) {
                         BroadcastOp broadcastOp = (BroadcastOp) differentialFunction;
                         Nd4j.getExecutioner().exec(broadcastOp, axes);
-                    } else if (differentialFunction instanceof GradientOp) {
+                    } else if(differentialFunction instanceof GradientOp) {
                         Nd4j.getExecutioner().exec(op);
-                    } else if (differentialFunction instanceof IndexAccumulation) {
+                    } else if(differentialFunction instanceof IndexAccumulation) {
                         IndexAccumulation indexAccumulation = (IndexAccumulation) differentialFunction;
                         Nd4j.getExecutioner().exec(indexAccumulation, axes);
 
+                    } else if(differentialFunction instanceof TransformOp){
+                        TransformOp t = (TransformOp)differentialFunction;
+                        Nd4j.getExecutioner().exec(t, axes);
                     }
                 }
 
-
                 ops.add(differentialFunction);
             }
-
 
             //debug
             printFunction(differentialFunction);
