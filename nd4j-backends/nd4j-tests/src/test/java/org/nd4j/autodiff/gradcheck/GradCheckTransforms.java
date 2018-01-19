@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
 public class GradCheckTransforms {
@@ -38,7 +41,11 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 51; i++) {
+
+            if (i < 50) {
+                continue;
+            }
 
             SameDiff sd = SameDiff.create();
 
@@ -290,6 +297,23 @@ public class GradCheckTransforms {
                     }
 
                     t = sd.clipByNorm(in, clip);
+                    break;
+                    //TODO clip by norm along other dimensions
+                case 50:
+                    t = sd.reverse(in, 0);
+                    int[] temp = new int[ia.size(0)];
+                    for( int j=0; j<temp.length; j++ ){
+                        temp[j] = temp.length - j - 1;
+                    }
+                    expOut = Nd4j.pullRows(ia, 1, temp);
+                    break;
+                case 51:
+                    t = sd.cumsum(in, 1);
+                    expOut = Nd4j.create(ia.shape());
+                    for( int r=0; r<ia.size(0); r++ ){
+                        INDArray sub = ia.get(interval(0,r,true), all()).sum(0);
+                        expOut.putRow(r, sub);
+                    }
                     break;
                 default:
                     throw new RuntimeException();

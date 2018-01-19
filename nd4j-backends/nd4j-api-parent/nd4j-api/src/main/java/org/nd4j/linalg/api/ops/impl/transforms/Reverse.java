@@ -25,22 +25,16 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Reverse op
  */
 public class Reverse extends BaseTransformOp {
-    public Reverse(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public Reverse(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Reverse(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public Reverse(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
+        super(sameDiff, i_v, false);
+        this.dimensions = dimensions;
     }
 
     public Reverse() {}
@@ -72,7 +66,7 @@ public class Reverse extends BaseTransformOp {
 
     @Override
     public boolean isExecSpecial() {
-        return true;
+        return false;
     }
 
     @Override
@@ -92,14 +86,8 @@ public class Reverse extends BaseTransformOp {
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        passThrough = true;
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        SDVariable ret = f().reverse(f1.get(0), dimensions);
+        return Collections.singletonList(ret);
     }
 }
