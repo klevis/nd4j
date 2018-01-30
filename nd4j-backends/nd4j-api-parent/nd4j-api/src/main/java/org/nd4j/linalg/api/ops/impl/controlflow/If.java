@@ -357,6 +357,6 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Merge";
+        return "MergeZZZ";
     }
 }

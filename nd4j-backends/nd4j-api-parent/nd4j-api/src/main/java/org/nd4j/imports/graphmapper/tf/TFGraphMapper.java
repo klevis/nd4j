@@ -471,6 +471,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
             // FIXME: early draft
             // conditional import
+            /*
             if (nodeName.startsWith("cond") && nodeName.contains("/")) {
                 val str = nodeName.replaceAll("/.*$","");
                 importCondition(str, tfNode, importState);
@@ -482,6 +483,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 return;
             }
+            */
 
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
             if(differentialFunction == null) {

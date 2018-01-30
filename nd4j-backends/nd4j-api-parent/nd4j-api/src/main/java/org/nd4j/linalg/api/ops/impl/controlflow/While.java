@@ -613,7 +613,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"Enter","Expose"};
+        return new String[] {"EnterZZZZ","ExposeZZZZ"};
     }
 
 
