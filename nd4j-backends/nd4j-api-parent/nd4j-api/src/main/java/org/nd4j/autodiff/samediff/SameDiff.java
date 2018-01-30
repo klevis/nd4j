@@ -4986,10 +4986,11 @@ public class SameDiff {
             for (val node : scope.getValue().variables()) {
                 INDArray arr = node.getArr();
                 if (arr == null) {
-                    val otherArr = Nd4j.scalar(1.0);
-                    scope.getValue().putArrayForVarName(node.getVarName(), otherArr);
-                    log.warn("Adding placeholder for export for var name {}", node.getVarName());
-                    arr = otherArr;
+                    //val otherArr = Nd4j.scalar(1.0);
+                    //scope.getValue().putArrayForVarName(node.getVarName(), otherArr);
+                    //log.warn("Adding placeholder for export for var name {}", node.getVarName());
+                    //arr = otherArr;
+                    continue;
                 }
 
                 int name = bufferBuilder.createString(node.getVarName());
