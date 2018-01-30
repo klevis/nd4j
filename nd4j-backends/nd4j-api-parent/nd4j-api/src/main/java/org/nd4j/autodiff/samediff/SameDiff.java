@@ -4844,6 +4844,7 @@ public class SameDiff {
     }
 
     protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, AtomicInteger idCounter) {
+        val opName = node.opName();
         val hash = getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
@@ -4871,8 +4872,9 @@ public class SameDiff {
 
 
         val inputs = node.args();
+        log.trace("");
         for (val input : inputs) {
-            for (int i = 0; i < outputVertexId.length; i++) {
+            //for (int i = 0; i < outputVertexId.length; i++) {
                 val pair = parseVariable(input.getVarName());
                 if (!reverseMap.containsKey(pair.getFirst()))
                     throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
@@ -4881,7 +4883,7 @@ public class SameDiff {
                 int outputIndex = pair.getSecond();
 
                 inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outputIndex));
-            }
+            //}
         }
 
         log.info("Own Name: {}", node.getOwnName());
@@ -5156,7 +5158,10 @@ public class SameDiff {
                     sb.append(", ");
             }
 
-            sb.append("}\n");
+            sb.append("};");
+            sb.append(" Hash: {").append(node.opNum()).append("};");
+
+            sb.append("\n");
         }
 
 
@@ -5215,8 +5220,12 @@ public class SameDiff {
             return 0;
         } else if (type == Op.Type.RETURN) {
             return 40;
-        } else if (type == Op.Type.IF || type == Op.Type.CONDITIONAL) {
+        } else if (type == Op.Type.IF) {
+            return 30;
+        } else if (type == Op.Type.CONDITIONAL) {
             return 10;
+        } else if (type == Op.Type.MERGE) {
+            return 60L;
         } else if (type == Op.Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
             if (name2 == null)
@@ -5287,11 +5296,11 @@ public class SameDiff {
                 return OpType.INDEX_ACCUMULATION;
             case RANDOM:
                 return OpType.RANDOM;
+            case MERGE:
             case CONDITIONAL:
-                return OpType.LOGIC;
             case LOOP:
-                return OpType.LOGIC;
             case RETURN:
+            case IF:
                 return OpType.LOGIC;
             case CUSTOM:
                 return OpType.CUSTOM;

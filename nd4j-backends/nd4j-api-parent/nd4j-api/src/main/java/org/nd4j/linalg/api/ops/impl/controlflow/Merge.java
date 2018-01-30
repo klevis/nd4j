@@ -20,6 +20,10 @@ public class Merge extends DynamicCustomOp {
         return "merge";
     }
 
+    @Override
+    public long opHash() {
+        return 60L;
+    }
 
     @Override
     public List<int[]> calculateOutputShape() {
@@ -42,7 +46,7 @@ public class Merge extends DynamicCustomOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.CONDITIONAL;
+        return Op.Type.MERGE;
     }
 
     @Override

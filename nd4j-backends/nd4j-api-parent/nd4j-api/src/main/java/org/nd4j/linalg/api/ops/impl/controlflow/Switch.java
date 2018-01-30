@@ -20,7 +20,6 @@ public class Switch extends DynamicCustomOp {
         return "switch";
     }
 
-
     @Override
     public List<int[]> calculateOutputShape() {
         if(args()[0].getArr() != null) {
@@ -42,7 +41,7 @@ public class Switch extends DynamicCustomOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.CONDITIONAL;
+        return Op.Type.IF;
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.nd4j.linalg.util.HashUtil;
 import org.tensorflow.framework.GraphDef;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -757,6 +758,13 @@ public class TensorFlowImportTest {
         }
     }
 
+    @Test
+    public void testPewPew1() {
+        val array = Nd4j.create(1, 1);
+        array.assign(1.0);
+
+        log.info("Assign: {}", array);
+    }
 
     @Test
     public void testCondMapping1() throws Exception {
@@ -764,7 +772,9 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
         assertNotNull(tg);
 
-        log.info("{}", tg.asFlatPrint());
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
     }
 
 }
