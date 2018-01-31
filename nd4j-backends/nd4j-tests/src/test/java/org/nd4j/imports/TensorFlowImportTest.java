@@ -772,9 +772,18 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
         assertNotNull(tg);
 
-        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
-        //log.info("{}", tg.asFlatPrint());
+        log.info("{}", tg.asFlatPrint());
+    }
+
+    @Test
+    public void testWhileMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        log.info("{}", tg.asFlatPrint());
     }
 
 }

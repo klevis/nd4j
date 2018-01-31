@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.controlflow;
+package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -13,11 +13,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Switch extends DynamicCustomOp {
+public class Merge extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "switch";
+        return "merge";
+    }
+
+    @Override
+    public long opHash() {
+        return 60L;
     }
 
     @Override
@@ -36,12 +41,12 @@ public class Switch extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Switch";
+        return "Merge";
     }
 
     @Override
     public Op.Type opType() {
-        return Op.Type.IF;
+        return Op.Type.MERGE;
     }
 
     @Override

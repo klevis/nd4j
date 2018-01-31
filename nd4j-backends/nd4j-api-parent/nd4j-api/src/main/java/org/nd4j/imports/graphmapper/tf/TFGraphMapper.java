@@ -93,6 +93,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     @Override
     public boolean isOpIgnoreException(NodeDef node) {
         //if statements should not be ignored
+/*
         if(node.getOp().equals("Merge")) {
             boolean ret = false;
             for(int i = 0; i < node.getInputCount(); i++) {
@@ -114,8 +115,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
             return ret;
         }
-
-        return false;
+*/
+        return true;
     }
 
     @Override

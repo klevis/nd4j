@@ -5300,6 +5300,9 @@ public class SameDiff {
             case CONDITIONAL:
             case LOOP:
             case RETURN:
+            case ENTER:
+            case EXIT:
+            case NEXT_ITERATION:
             case IF:
                 return OpType.LOGIC;
             case CUSTOM:
