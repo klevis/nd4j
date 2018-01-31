@@ -5599,6 +5599,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 // #ifndef LIBND4J_PAIR_H
 // #define LIBND4J_PAIR_H
+
+// #include <dll.h>
     @Namespace("nd4j") @NoOffset public static class Pair extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -12865,6 +12867,27 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const IntBuffer maxShapeInfo, @Const IntBuffer minShapeInfo, int maxIdx);
     @Namespace("shape") public static native @Cast("Nd4jIndex") long subArrayIndex(@Const int[] maxShapeInfo, @Const int[] minShapeInfo, int maxIdx);
 
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void shapeScalar(IntPointer buffer);
+    @Namespace("shape") public static native void shapeScalar(IntBuffer buffer);
+    @Namespace("shape") public static native void shapeScalar(int[] buffer);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void shapeVector(int length, IntPointer buffer);
+    @Namespace("shape") public static native void shapeVector(int length, IntBuffer buffer);
+    @Namespace("shape") public static native void shapeVector(int length, int[] buffer);
+
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void shapeOldScalar(IntPointer buffer, char order);
+    @Namespace("shape") public static native void shapeOldScalar(IntBuffer buffer, char order);
+    @Namespace("shape") public static native void shapeOldScalar(int[] buffer, char order);
+
+
 
 
 //END HEADERS
@@ -13888,7 +13911,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifdef __CUDACC__
 // #endif
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
-    // also sort input array of dimensions, this operation is also necessary for creating TAD object
+    // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
 
 
 // #ifdef __CUDACC__
@@ -13896,11 +13919,21 @@ public static final int PREALLOC_SIZE = 33554432;
 // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
 
 
+// #ifdef __CUDACC__
+// #endif
+
+// #ifdef __CUDACC__
+// #endif
+
+
+// #ifdef __CUDACC__
+// #endif
+
 
 
 
 // #endif /* SHAPE_H_ */
-
+        
 
 // Parsed from array/ShapeList.h
 
@@ -16318,7 +16351,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/loss.h>
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
-// #include <helpers/ShapeBuilder.h>
 // #include <dll.h>
 // #include <Status.h>
     @Namespace("nd4j") public static class _loader extends Pointer {

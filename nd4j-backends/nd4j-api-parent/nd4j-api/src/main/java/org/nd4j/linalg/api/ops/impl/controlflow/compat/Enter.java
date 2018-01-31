@@ -21,11 +21,6 @@ public class Enter extends DynamicCustomOp {
     }
 
     @Override
-    public long opHash() {
-        return 70L;
-    }
-
-    @Override
     public List<int[]> calculateOutputShape() {
         if(args()[0].getArr() != null) {
             return Arrays.asList(args()[0].getShape(),args()[0].getShape());

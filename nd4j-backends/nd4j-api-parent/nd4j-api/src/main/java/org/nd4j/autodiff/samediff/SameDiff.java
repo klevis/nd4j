@@ -4843,7 +4843,7 @@ public class SameDiff {
         }
     }
 
-    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, AtomicInteger idCounter) {
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, AtomicInteger idCounter) {
         val opName = node.opName();
         val hash = getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
@@ -4876,8 +4876,16 @@ public class SameDiff {
         for (val input : inputs) {
             //for (int i = 0; i < outputVertexId.length; i++) {
                 val pair = parseVariable(input.getVarName());
-                if (!reverseMap.containsKey(pair.getFirst()))
-                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
+                if (!reverseMap.containsKey(pair.getFirst())) {
+                    if (pair.getFirst().contains("NextIteration")) {
+                        // forward declaration
+                        int fwdNodeId = idCounter.incrementAndGet();
+                        forwardMap.put(pair.getFirst(), fwdNodeId);
+                        reverseMap.put(pair.getFirst(), fwdNodeId);
+                    } else {
+                        throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
+                    }
+                }
 
                 int nodeId = reverseMap.get(pair.getFirst());
                 int outputIndex = pair.getSecond();
@@ -4887,7 +4895,7 @@ public class SameDiff {
         }
 
         log.info("Own Name: {}", node.getOwnName());
-        int ownId = idCounter.incrementAndGet();
+        int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()): idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
@@ -4949,6 +4957,7 @@ public class SameDiff {
         // first of all we build VariableSpace dump
         List<SDVariable> variableList = new ArrayList<>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
+        val forwardMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
         for (val variable : variables()) {
@@ -4977,7 +4986,7 @@ public class SameDiff {
 
         //add functions
         for (val func : functionInstancesById.values()) {
-            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, idCounter));
+            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, idCounter));
         }
 
         // we're dumping scopes now
@@ -5010,7 +5019,7 @@ public class SameDiff {
 
             //add functions
             for (val func : scope.getValue().functionInstancesById.values()) {
-                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, idCounter));
+                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, idCounter));
             }
 
         }
@@ -5159,7 +5168,7 @@ public class SameDiff {
             }
 
             sb.append("};");
-            sb.append(" Hash: {").append(node.opNum()).append("};");
+            sb.append(" OpNum: {").append(node.opNum()).append("};");
 
             sb.append("\n");
         }
@@ -5226,6 +5235,14 @@ public class SameDiff {
             return 10;
         } else if (type == Op.Type.MERGE) {
             return 60L;
+        } else if (type == Op.Type.LOOP_COND) {
+            return 70L;
+        } else if (type == Op.Type.NEXT_ITERATION) {
+            return 80L;
+        } else if (type == Op.Type.EXIT) {
+            return 90L;
+        } else if (type == Op.Type.ENTER) {
+            return 100L;
         } else if (type == Op.Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
             if (name2 == null)
@@ -5303,6 +5320,7 @@ public class SameDiff {
             case ENTER:
             case EXIT:
             case NEXT_ITERATION:
+            case LOOP_COND:
             case IF:
                 return OpType.LOGIC;
             case CUSTOM:
