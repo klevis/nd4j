@@ -15,12 +15,20 @@ public class NodeState {
     private boolean active = true;
     private int activeBranch = 0;
     private boolean executed = false;
-    private int numCycles = 0;
+    private long numCycles = 0;
 
     private int rewindPosition = -1;
     private String rewindNode;
 
     public NodeState(@NonNull String nodeName) {
         this.nodeName = nodeName;
+    }
+
+    public void incrementNumberOfCycles() {
+        numCycles++;
+    }
+
+    public long getNumberOfCycles() {
+        return numCycles;
     }
 }

@@ -4548,6 +4548,10 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
+
+            // just registering function for this pass
+            flowPath.ensureNodeStateExists(differentialFunction.getOwnName());
+
             if (differentialFunction instanceof SDVariable) {
                 continue;
             }
@@ -4596,6 +4600,10 @@ public class SameDiff {
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                // incrementing number of cycles for THIS node
+                flowPath.incrementNumberOfCycles(differentialFunction.getOwnName());
+
             } else if (differentialFunction instanceof Merge) {
                 // merge operation takes two inputs, and saves one of them as own output.
                 // if SDVariable exists for second input - we use it. First input used otherwise
@@ -4606,7 +4614,6 @@ public class SameDiff {
                     // propagate second input
                     val array = inputs[1].getArr();
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
