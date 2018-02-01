@@ -4555,8 +4555,10 @@ public class SameDiff {
             // check if inputs are active nodes. skip step otherwise
             val args = getInputsForFunction(differentialFunction);
             for (val input: args) {
-                if (!flowPath.isActive(input))
+                if (!flowPath.isActive(input)) {
+                    flowPath.markActive(differentialFunction.getOwnName(), false);
                     continue;
+                }
             }
 
             differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
@@ -4581,8 +4583,9 @@ public class SameDiff {
                 // if SDVariable exists for second input - we use it. First input used otherwise
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
+                val ion = inputs[1].getVarName();
                 // we must check second input first here
-                if (flowPath.wasExecuted(inputs[1].getOwnName())) {
+                if (flowPath.wasExecuted(ion)) {
                     // propagate second input
                     val array = inputs[1].getArr();
                     log.trace("Propagating second input: {}");
@@ -4604,10 +4607,12 @@ public class SameDiff {
 
                 // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
                 if ((int) bool.getDouble(0) == 0) {
+                    log.info("Switch FALSE branch");
                     // false step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
                     variableNameToArr.put(differentialFunction.getOwnName(), input);
                 } else {
+                    log.info("Switch TRUE branch");
                     // true step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
                     variableNameToArr.put(differentialFunction.getOwnName() + ":1", input);
