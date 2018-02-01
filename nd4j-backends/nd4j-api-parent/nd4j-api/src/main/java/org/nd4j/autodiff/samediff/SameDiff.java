@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -4545,7 +4546,26 @@ public class SameDiff {
 
             differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
 
-            if (differentialFunction instanceof If) {
+            /**
+             * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
+             * Since SameDiff itself has own logic for loops and conditionals using Scopes
+             */
+            if (differentialFunction instanceof Enter) {
+                log.info("Enter");
+
+            } else if (differentialFunction instanceof Exit) {
+                log.info("Exit");
+
+            } else if (differentialFunction instanceof NextIteration) {
+                log.info("NextIteration");
+
+            } else if (differentialFunction instanceof Merge) {
+                log.info("Merge");
+
+            } else if (differentialFunction instanceof Switch) {
+                log.info("Switch");
+
+            } else if (differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
                 if (!onBackward) {
                     ifOp.getPredicateExecution().exec();

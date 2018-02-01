@@ -774,7 +774,8 @@ public class TensorFlowImportTest {
 
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
-        log.info("{}", tg.asFlatPrint());
+        //log.info("{}", tg.asFlatPrint());
+        tg.execAndEndResult();
     }
 
     @Test
