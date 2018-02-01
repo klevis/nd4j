@@ -4569,16 +4569,33 @@ public class SameDiff {
              * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
              * Since SameDiff itself has own logic for loops and conditionals using Scopes
              */
-            if (differentialFunction instanceof Enter) {
-                log.info("Enter");
+            if (differentialFunction instanceof LoopCond) {
+                log.info("LoopCond");
 
+            }else if (differentialFunction instanceof Enter) {
+                log.info("Enter");
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
+                val array = inputs[0].getArr();
+                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
             } else if (differentialFunction instanceof Exit) {
                 // this is just exit point of graph: it maps own input to own output
                 log.info("Exit");
 
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
+                val array = inputs[0].getArr();
+                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
                 log.info("NextIteration");
+
+
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
+                val array = inputs[0].getArr();
+                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                // rewind should happen right here
 
             } else if (differentialFunction instanceof Merge) {
                 // merge operation takes two inputs, and saves one of them as own output.
@@ -4590,12 +4607,12 @@ public class SameDiff {
                 if (flowPath.wasExecuted(ion)) {
                     // propagate second input
                     val array = inputs[1].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array);
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array);
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
                 }
 
             } else if (differentialFunction instanceof Switch) {
@@ -4609,11 +4626,11 @@ public class SameDiff {
                 if ((int) bool.getDouble(0) == 0) {
                     // false step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
-                    variableNameToArr.put(differentialFunction.getOwnName(), input);
+                    variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
                     // true step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
-                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input);
+                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
                 }
             } else if (differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;

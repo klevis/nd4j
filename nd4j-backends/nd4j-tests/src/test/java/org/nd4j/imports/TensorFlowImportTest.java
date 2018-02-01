@@ -803,10 +803,17 @@ public class TensorFlowImportTest {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
         assertNotNull(tg);
+        val input = Nd4j.create(2, 2).assign(1);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_0"));
 
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
 
-        log.info("{}", tg.asFlatPrint());
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(1);
+        assertNotNull(array);
+        assertEquals(exp, array);
     }
 
 }
