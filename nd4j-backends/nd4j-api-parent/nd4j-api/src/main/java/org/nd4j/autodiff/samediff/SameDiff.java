@@ -4586,25 +4586,23 @@ public class SameDiff {
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                // rewind should happen right here
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
                 log.info("NextIteration");
-
 
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                // rewind should happen right here
-
             } else if (differentialFunction instanceof Merge) {
                 // merge operation takes two inputs, and saves one of them as own output.
                 // if SDVariable exists for second input - we use it. First input used otherwise
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
-                val ion = inputs[1].getVarName();
                 // we must check second input first here
-                if (flowPath.wasExecuted(ion)) {
+                if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));

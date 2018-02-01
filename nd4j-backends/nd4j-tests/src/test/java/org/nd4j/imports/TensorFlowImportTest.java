@@ -816,4 +816,40 @@ public class TensorFlowImportTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void testWhileMapping2() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input = Nd4j.trueScalar(4.0);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(2);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileMapping3() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input = Nd4j.trueScalar(9.0);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(4);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
 }
