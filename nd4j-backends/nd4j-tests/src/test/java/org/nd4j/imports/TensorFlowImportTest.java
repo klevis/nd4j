@@ -783,6 +783,8 @@ public class TensorFlowImportTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
         assertNotNull(tg);
 
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
         log.info("{}", tg.asFlatPrint());
     }
 
