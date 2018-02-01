@@ -13,6 +13,7 @@ public class NodeState {
     private String nodeName;
     private boolean active = true;
     private int activeBranch = 0;
+    private boolean executed = false;
 
     public NodeState(@NonNull String nodeName) {
         this.nodeName = nodeName;

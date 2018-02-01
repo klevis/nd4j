@@ -4530,6 +4530,11 @@ public class SameDiff {
 
         List<DifferentialFunction> ops = new ArrayList<>();
 
+        // we don't care if this thread had any other FlowPath objects attached. we'll just create new one
+        localFlowPath.set(new FlowPath());
+
+        val flowPath = localFlowPath.get();
+
         Map<SDVariable, DifferentialFunction> opMap = new HashMap<>();
         val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
         boolean onBackward = false;
@@ -4547,8 +4552,16 @@ public class SameDiff {
                 continue;
             }
 
+            // check if inputs are active nodes. skip step otherwise
+            val args = getInputsForFunction(differentialFunction);
+            for (val input: args) {
+                if (!flowPath.isActive(input))
+                    continue;
+            }
 
             differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
+
+            flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
             /**
              * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
@@ -4565,6 +4578,22 @@ public class SameDiff {
 
             } else if (differentialFunction instanceof Merge) {
                 log.info("Merge");
+                // if SDVariable exists for second input - we use it. First input used otherwise
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
+                // we must check second input first here
+                if (flowPath.wasExecuted(inputs[1].getOwnName())) {
+                    // propagate second input
+                    val array = inputs[1].getArr();
+                    log.trace("Propagating second input: {}");
+                    variableNameToArr.put(differentialFunction.getOwnName(), array);
+
+                } else {
+                    // propagate first input
+                    val array = inputs[0].getArr();
+                    log.trace("Propagating first input");
+                    variableNameToArr.put(differentialFunction.getOwnName(), array);
+                }
 
             } else if (differentialFunction instanceof Switch) {
                 log.info("Switch");
@@ -4573,11 +4602,16 @@ public class SameDiff {
                 val input = ((Switch) differentialFunction).getInputArgument(0);
                 val bool = ((Switch) differentialFunction).getInputArgument(1);
 
-                if ((int) bool.getDouble(0) == 0)
-                    localFlowPath.get().setActiveBranch(differentialFunction.getOwnName(), 0);
-                else
-                    localFlowPath.get().setActiveBranch(differentialFunction.getOwnName(), 1);
-
+                // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
+                if ((int) bool.getDouble(0) == 0) {
+                    // false step, we'll propagate output here
+                    flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
+                    variableNameToArr.put(differentialFunction.getOwnName(), input);
+                } else {
+                    // true step, we'll propagate output here
+                    flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
+                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input);
+                }
 
                 log.trace("stopper");
             } else if (differentialFunction instanceof If) {

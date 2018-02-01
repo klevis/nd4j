@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.flow;
 
 import lombok.NonNull;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -10,7 +11,7 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class FlowPath {
-    protected Map<String, NodeState> states;
+    protected Map<String, NodeState> states = new HashMap<>();
 
 
     protected void ensureNodeStateExists(@NonNull String nodeName) {
@@ -40,6 +41,18 @@ public class FlowPath {
         ensureNodeStateExists(nodeName);
 
         return states.get(nodeName).getActiveBranch();
+    }
+
+    public boolean wasExecuted(@NonNull String nodeName) {
+        ensureNodeStateExists(nodeName);
+
+        return states.get(nodeName).isExecuted();
+    }
+
+    public void markExecuted(@NonNull String nodeName, boolean executed) {
+        ensureNodeStateExists(nodeName);
+
+        states.get(nodeName).setExecuted(executed);
     }
 
 }

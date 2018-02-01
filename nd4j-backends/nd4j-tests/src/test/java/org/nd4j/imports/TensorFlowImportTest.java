@@ -775,7 +775,10 @@ public class TensorFlowImportTest {
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
         //log.info("{}", tg.asFlatPrint());
-        tg.execAndEndResult();
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-2);
+        assertNotNull(array);
+        assertEquals(exp, array);
     }
 
     @Test
