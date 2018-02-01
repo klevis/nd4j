@@ -15,6 +15,7 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.FunctionProperties;
+import org.nd4j.autodiff.samediff.flow.FlowPath;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.graph.*;
@@ -113,6 +114,9 @@ public class SameDiff {
     //individual index for variable names
     private Map<String, List<DifferentialFunction>> functionsArgsFor;
     private Map<String, List<DifferentialFunction>> functionOutputFor;
+
+    // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
+    private ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
 
     /**
      * For import, many times we have variables
@@ -4564,7 +4568,18 @@ public class SameDiff {
 
             } else if (differentialFunction instanceof Switch) {
                 log.info("Switch");
+                ((CustomOp) differentialFunction).populateInputsAndOutputsFromSameDiff();
 
+                val input = ((Switch) differentialFunction).getInputArgument(0);
+                val bool = ((Switch) differentialFunction).getInputArgument(1);
+
+                if ((int) bool.getDouble(0) == 0)
+                    localFlowPath.get().setActiveBranch(differentialFunction.getOwnName(), 0);
+                else
+                    localFlowPath.get().setActiveBranch(differentialFunction.getOwnName(), 1);
+
+
+                log.trace("stopper");
             } else if (differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
                 if (!onBackward) {
