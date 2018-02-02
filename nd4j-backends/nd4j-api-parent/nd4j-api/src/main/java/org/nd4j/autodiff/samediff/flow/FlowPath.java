@@ -20,13 +20,14 @@ public class FlowPath {
     }
 
     public boolean isActive(@NonNull String nodeName) {
-        if (!states.containsKey(nodeName))
-            return false;
+        ensureNodeStateExists(nodeName);
 
         return states.get(nodeName).isActive();
     }
 
     public void markActive(@NonNull String nodeName, boolean active) {
+        ensureNodeStateExists(nodeName);
+
         states.get(nodeName).setActive(active);
     }
 
@@ -39,8 +40,7 @@ public class FlowPath {
     }
 
     public boolean wasExecuted(@NonNull String nodeName) {
-        if (!states.containsKey(nodeName))
-            return false;
+        ensureNodeStateExists(nodeName);
 
         return states.get(nodeName).isExecuted();
     }

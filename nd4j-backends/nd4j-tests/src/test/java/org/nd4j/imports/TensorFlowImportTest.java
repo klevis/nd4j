@@ -852,4 +852,44 @@ public class TensorFlowImportTest {
         assertEquals(exp, array);
     }
 
+
+    @Test
+    public void testWhileDualMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(-4.0);
+        val input1 = Nd4j.trueScalar(1.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_1.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-1);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileDualMapping2() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(-9.0);
+        val input1 = Nd4j.trueScalar(1.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_1.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-3);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
 }

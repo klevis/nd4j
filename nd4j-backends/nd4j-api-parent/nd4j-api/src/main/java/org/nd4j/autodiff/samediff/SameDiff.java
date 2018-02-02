@@ -4538,7 +4538,12 @@ public class SameDiff {
         Map<SDVariable, DifferentialFunction> opMap = new HashMap<>();
         val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
         boolean onBackward = false;
-        for (int i = 0; i < funcs.size(); i++) {
+
+        boolean rewindPlanned = false;
+        int rewindPosition = -1;
+
+        int i = 0;
+        for (; i < funcs.size(); i++) {
             val opName = funcs.get(i).opName();
             if (!onBackward && opName.equals(new GradientBackwardsMarker().opName())) {
                 onBackward = true;
@@ -4548,6 +4553,7 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
+            val ownName = differentialFunction.getOwnName();
 
             // just registering function for this pass
             flowPath.ensureNodeStateExists(differentialFunction.getOwnName());
@@ -4556,46 +4562,68 @@ public class SameDiff {
                 continue;
             }
 
-            // check if inputs are active nodes. skip step otherwise
+            boolean shouldSkip = false;
+
             val args = getInputsForFunction(differentialFunction);
-            for (val input: args) {
-                if (!flowPath.isActive(input)) {
-                    flowPath.markActive(differentialFunction.getOwnName(), false);
-                    continue;
-                }
+
+            // check if inputs are active nodes. skip step otherwise
+            // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
+            if (!(differentialFunction instanceof Exit))
+                for (val input: args) {
+                    if (!flowPath.isActive(input)) {
+                        flowPath.markActive(differentialFunction.getOwnName(), false);
+                        shouldSkip = true;
+                        break;
+                    }
             }
 
-            differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
+            if (shouldSkip)
+                continue;
 
-            flowPath.markExecuted(differentialFunction.getOwnName(), true);
+            differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
 
             /**
              * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
              * Since SameDiff itself has own logic for loops and conditionals using Scopes
              */
             if (differentialFunction instanceof LoopCond) {
-                log.info("LoopCond");
+                // this node just passes single input forward, for future evaluation
+                val inputs = getInputVariablesForFunction(differentialFunction);
 
+                val array = inputs[0].getArr();
+                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
             }else if (differentialFunction instanceof Enter) {
-                log.info("Enter");
+                if (flowPath.wasExecuted(differentialFunction.getOwnName()))
+                    continue;
+
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Exit) {
-                // this is just exit point of graph: it maps own input to own output
-                log.info("Exit");
+                // this is just exit point of graph: it maps own input to own output or rewinds graph to specific position planned at first NextIteration node
+
+                if (rewindPlanned) {
+                    // just reset loop
+                    rewindPlanned = false;
+                    i = rewindPosition;
+                    rewindPosition = -1;
+
+                    continue;
+                }
 
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
-                // rewind should happen right here
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
-                log.info("NextIteration");
-
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
@@ -4604,10 +4632,22 @@ public class SameDiff {
                 // incrementing number of cycles for THIS node
                 flowPath.incrementNumberOfCycles(differentialFunction.getOwnName());
 
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                if (!rewindPlanned) {
+                    rewindPlanned = true;
+//                    rewindPosition = 1;
+
+                    continue;
+                }
+
             } else if (differentialFunction instanceof Merge) {
                 // merge operation takes two inputs, and saves one of them as own output.
                 // if SDVariable exists for second input - we use it. First input used otherwise
                 val inputs = getInputVariablesForFunction(differentialFunction);
+
+                if (rewindPosition == -1)
+                    rewindPosition = i - 1;
 
                 // we must check second input first here
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
@@ -4620,23 +4660,32 @@ public class SameDiff {
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
                 }
 
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Switch) {
                 // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
                 ((CustomOp) differentialFunction).populateInputsAndOutputsFromSameDiff();
 
-                val input = ((Switch) differentialFunction).getInputArgument(0);
-                val bool = ((Switch) differentialFunction).getInputArgument(1);
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
+                val input = inputs[0].getArr();
+                val bool = inputs[1].getArr();
 
                 // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
                 if ((int) bool.getDouble(0) == 0) {
                     // false step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
+                    flowPath.markActive(differentialFunction.getOwnName(), true);
+                    flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
                     variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
                     // true step, we'll propagate output here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
                     variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+                    flowPath.markActive(differentialFunction.getOwnName(), false);
+                    flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
                 }
+
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
                 if (!onBackward) {
@@ -4679,6 +4728,7 @@ public class SameDiff {
 
                 }
 
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
                 ops.add(differentialFunction);
 
@@ -4724,12 +4774,18 @@ public class SameDiff {
 
                 }
 
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
             } else if (differentialFunction instanceof CustomOp) {
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
                 customOp.populateInputsAndOutputsFromSameDiff();
                 customOp.assertValidForExecution();
+
+                customOp.updateInputsFromSameDiff();
+
                 Nd4j.getExecutioner().exec(customOp);
+
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
                 ops.add(customOp);
             } else if (differentialFunction instanceof Op) {
@@ -4741,7 +4797,14 @@ public class SameDiff {
                 } else {
                     int[] axes = differentialFunction.getDimensions();
                     if (differentialFunction instanceof Accumulation) {
+                        val inputs = getInputVariablesForFunction(differentialFunction);
                         Accumulation accumulation = (Accumulation) differentialFunction;
+
+                        accumulation.setX(inputs[0].getArr());
+
+                        if (inputs.length == 2)
+                            accumulation.setY(inputs[1].getArr());
+
 
                         Nd4j.getExecutioner().exec(accumulation, axes);
                         if (differentialFunction.outputVariables()[0].getArr() == null) {
@@ -4761,6 +4824,7 @@ public class SameDiff {
                     }
                 }
 
+                flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
                 ops.add(differentialFunction);
             }

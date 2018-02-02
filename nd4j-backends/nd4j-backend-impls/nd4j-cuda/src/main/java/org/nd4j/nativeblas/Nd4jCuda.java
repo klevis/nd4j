@@ -5695,19 +5695,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(Workspace workspace);
 
         /**
-        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
-        */
-        // NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
-        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
-        */ 
-        public FloatNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
-
-        /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
         public FloatNDArray(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
@@ -6040,7 +6027,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  apply OpName transformation directly to array
+        *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
 
@@ -6776,19 +6763,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(Workspace workspace);
 
         /**
-        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
-        */
-        // NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
-        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
-        */ 
-        public HalfNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
-        public HalfNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
-
-        /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
         public HalfNDArray(@Const HalfNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
@@ -7121,7 +7095,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  apply OpName transformation directly to array
+        *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
 
@@ -7857,19 +7831,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(Workspace workspace);
 
         /**
-        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
-        */
-        // NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
-        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
-        */ 
-        public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
-        public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
-        private native void allocate(@Cast("const Nd4jIndex") long length, char order);
-
-        /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
         public DoubleNDArray(@Const DoubleNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
@@ -8202,7 +8163,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  apply OpName transformation directly to array
+        *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
 
@@ -15492,6 +15453,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);
+//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+
+// #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), int);
 //                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
 
 // define macros for compiler enforcement to make function inline  
