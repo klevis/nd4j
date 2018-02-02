@@ -180,7 +180,7 @@ public interface MemoryWorkspaceManager {
     List<String> getAllWorkspacesIdsForCurrentThread();
 
     /**
-     * This method returns all workspaces for current JVM
+     * This method returns all workspaces for current thread
      */
     List<MemoryWorkspace> getAllWorkspacesForCurrentThread();
 }
