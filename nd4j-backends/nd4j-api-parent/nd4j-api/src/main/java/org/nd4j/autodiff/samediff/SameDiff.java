@@ -4545,6 +4545,9 @@ public class SameDiff {
         // simple flag, set true if within frame
         boolean inFrame = false;
 
+        // yet another flag, to remove LastFrame once we really left last frame
+        boolean frameLeft = false;
+
         int i = 0;
         for (; i < funcs.size(); i++) {
             val opName = funcs.get(i).opName();
@@ -4570,13 +4573,21 @@ public class SameDiff {
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
             boolean shouldSkip = false;
-            if (!(differentialFunction instanceof Exit))
-                for (val input: args) {
+            if (!(differentialFunction instanceof Exit)) {
+
+                // if we've left Exit nodes, we can finally delete last frame name
+                if (frameLeft) {
+                    frameLeft = false;
+                    frames.removeLast();
+                }
+
+                for (val input : args) {
                     if (!flowPath.isActive(input)) {
                         flowPath.markActive(differentialFunction.getOwnName(), false);
                         shouldSkip = true;
                         break;
                     }
+                }
             }
 
             if (shouldSkip)
@@ -4607,6 +4618,7 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
+                // frame_name MUST be non-null here
                 val frame_name = ((Enter) differentialFunction).getFrameName();
                 if (!flowPath.isRegisteredFrame(frame_name)) {
                     flowPath.registerFrame(frame_name);
@@ -4635,6 +4647,9 @@ public class SameDiff {
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                // now it's safe to remove LastFrame
+                frameLeft = true;
 
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
