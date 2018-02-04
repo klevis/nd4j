@@ -4581,8 +4581,10 @@ public class SameDiff {
                     frames.removeLast();
                 }
 
+                // we must check, if there's inactive nodes used as inputs for this node
                 for (val input : args) {
                     if (!flowPath.isActive(input)) {
+                        // propagate inactivity
                         flowPath.markActive(differentialFunction.getOwnName(), false);
                         shouldSkip = true;
                         break;
@@ -4632,6 +4634,9 @@ public class SameDiff {
 
                 val frame_name = frames.getLast();
 
+                // Exit node is called in any way, doesn't matters if body was executed or not
+                // so, we're checking if rewind was planned (so, NextIteration was executed before Exit)
+                // and if it's TRUE - we're setting applying rewind by setting loop idx and calling continue
                 if (flowPath.isRewindPlanned(frame_name)) {
                     // just reset loop
                     flowPath.planRewind(frame_name, false);
@@ -4665,6 +4670,7 @@ public class SameDiff {
 
                 val frame_name = frames.getLast();
 
+                // if NextIteration wasn't skipped with inactive branch, we'll plan rewind for this frame. obviously, only once
                 if (!flowPath.isRewindPlanned(frame_name)) {
                     flowPath.planRewind(frame_name, true);
 
@@ -4678,6 +4684,7 @@ public class SameDiff {
 
                 val frame_name = frames.getLast();
 
+                // frame_name can be null if this merge node is used for something that's not loop. i.e. switch/merge pair
                 if (frame_name != null)
                     flowPath.setRewindPositionOnce(frame_name, i - 1);
 
@@ -4713,13 +4720,13 @@ public class SameDiff {
 
                 // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
                 if ((int) bool.getDouble(0) == 0) {
-                    // false step, we'll propagate output here
+                    // false step, we'll propagate output:0 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
                     flowPath.markActive(differentialFunction.getOwnName(), true);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
                     variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
-                    // true step, we'll propagate output here
+                    // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
                     variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
                     flowPath.markActive(differentialFunction.getOwnName(), false);
