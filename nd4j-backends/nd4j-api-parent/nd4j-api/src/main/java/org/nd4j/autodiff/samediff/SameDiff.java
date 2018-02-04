@@ -4539,8 +4539,11 @@ public class SameDiff {
         val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
         boolean onBackward = false;
 
-        boolean rewindPlanned = false;
-        int rewindPosition = -1;
+        // dequeue for Frames (nested, probably)
+        val frames = new ArrayDeque<String>();
+
+        // simple flag, set true if within frame
+        boolean inFrame = false;
 
         int i = 0;
         for (; i < funcs.size(); i++) {
@@ -4562,12 +4565,11 @@ public class SameDiff {
                 continue;
             }
 
-            boolean shouldSkip = false;
-
             val args = getInputsForFunction(differentialFunction);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
+            boolean shouldSkip = false;
             if (!(differentialFunction instanceof Exit))
                 for (val input: args) {
                     if (!flowPath.isActive(input)) {
@@ -4604,14 +4606,25 @@ public class SameDiff {
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                val frame_name = ((Enter) differentialFunction).getFrameName();
+                if (!flowPath.isRegisteredFrame(frame_name)) {
+                    flowPath.registerFrame(frame_name);
+                    frames.addLast(frame_name);
+                    inFrame = true;
+                }
+
+
             } else if (differentialFunction instanceof Exit) {
                 // this is just exit point of graph: it maps own input to own output or rewinds graph to specific position planned at first NextIteration node
 
-                if (rewindPlanned) {
+                val frame_name = frames.getLast();
+
+                if (flowPath.isRewindPlanned(frame_name)) {
                     // just reset loop
-                    rewindPlanned = false;
-                    i = rewindPosition;
-                    rewindPosition = -1;
+                    flowPath.planRewind(frame_name, false);
+                    i = flowPath.getRewindPosition(frame_name);
+                    flowPath.setRewindPosition(frame_name, -1);
 
                     continue;
                 }
@@ -4622,6 +4635,7 @@ public class SameDiff {
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
                 val inputs = getInputVariablesForFunction(differentialFunction);
@@ -4634,9 +4648,10 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
-                if (!rewindPlanned) {
-                    rewindPlanned = true;
-//                    rewindPosition = 1;
+                val frame_name = frames.getLast();
+
+                if (!flowPath.isRewindPlanned(frame_name)) {
+                    flowPath.planRewind(frame_name, true);
 
                     continue;
                 }
@@ -4646,8 +4661,19 @@ public class SameDiff {
                 // if SDVariable exists for second input - we use it. First input used otherwise
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
-                if (rewindPosition == -1)
-                    rewindPosition = i - 1;
+                val frame_name = frames.getLast();
+
+                if (frame_name != null)
+                    flowPath.setRewindPositionOnce(frame_name, i - 1);
+
+                // NextIteration can have NO frame_name defined. so let's propagate it
+                if (inputs.length == 2) {
+                    val secondArg = functionInstancesById.get(inputs[1].getVarName());
+
+                    if (secondArg != null && secondArg instanceof NextIteration) {
+                        ((NextIteration) secondArg).setFrameName(frame_name);
+                    }
+                }
 
                 // we must check second input first here
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
@@ -4789,7 +4815,15 @@ public class SameDiff {
 
                 ops.add(customOp);
             } else if (differentialFunction instanceof Op) {
+                val inputs = getInputVariablesForFunction(differentialFunction);
+
                 Op op = (Op) differentialFunction;
+
+                // ops in differential function might have stale NDArrays used. we should renew them
+                op.setX(inputs[0].getArr());
+                if (inputs.length == 2)
+                    op.setY(inputs[1].getArr());
+
                 if (differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);
                 else if (op.isExecSpecial()) {
@@ -4797,14 +4831,7 @@ public class SameDiff {
                 } else {
                     int[] axes = differentialFunction.getDimensions();
                     if (differentialFunction instanceof Accumulation) {
-                        val inputs = getInputVariablesForFunction(differentialFunction);
                         Accumulation accumulation = (Accumulation) differentialFunction;
-
-                        accumulation.setX(inputs[0].getArr());
-
-                        if (inputs.length == 2)
-                            accumulation.setY(inputs[1].getArr());
-
 
                         Nd4j.getExecutioner().exec(accumulation, axes);
                         if (differentialFunction.outputVariables()[0].getArr() == null) {

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Exit extends DynamicCustomOp {
+    protected String frame_name;
 
     @Override
     public String opName() {
@@ -27,6 +29,10 @@ public class Exit extends DynamicCustomOp {
         }
         else
             return Collections.emptyList();
+    }
+
+    public String getFrameName() {
+        return frame_name;
     }
 
     @Override
@@ -47,5 +53,10 @@ public class Exit extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+
+        if (nodeDef.containsAttr("frame_name")) {
+            val attr = nodeDef.getAttrOrThrow("frame_name");
+            this.frame_name = attr.getS().toStringUtf8();
+        }
     }
 }
