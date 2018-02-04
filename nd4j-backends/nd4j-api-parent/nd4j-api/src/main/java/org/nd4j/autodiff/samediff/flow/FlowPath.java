@@ -122,6 +122,16 @@ public class FlowPath {
     }
 
     /**
+     * This method removes specified frame from tracking
+     *
+     * @param frame_name
+     */
+    // FIXME: this approach is probably bad (for backprop) and should be reconsidered
+    public void forgetFrame(@NonNull String frame_name) {
+        frames.remove(frame_name);
+    }
+
+    /**
      * This method returns TRUE if frame_name already registered, false otherwise
      *
      * @param frame_name

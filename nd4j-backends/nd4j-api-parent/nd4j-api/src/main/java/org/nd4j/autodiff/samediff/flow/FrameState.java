@@ -15,6 +15,9 @@ public class FrameState {
     private boolean rewindPlanned = false;
     private int rewindPosition = -1;
 
+    private int numberOfEntries = 0;
+    private int numberOfExits = 0;
+
 
     public FrameState(@NonNull String frame_name) {
         this.name = frame_name;

@@ -892,4 +892,25 @@ public class TensorFlowImportTest {
         assertNotNull(array);
         assertEquals(exp, array);
     }
+
+
+    @Test
+    public void testMixedWhileCond1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_nested/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(1.0);
+        val input1 = Nd4j.create(3, 3).assign(2.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_nested.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+       // val array = tg.execAndEndResult();
+       // val exp = Nd4j.create(2, 2).assign(15.0);
+       // assertNotNull(array);
+       // assertEquals(exp, array);
+    }
 }

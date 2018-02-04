@@ -4570,6 +4570,8 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
+            log.info("Executing op {} for node [{}]", opName, ownName);
+
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
             boolean shouldSkip = false;
@@ -4578,7 +4580,10 @@ public class SameDiff {
                 // if we've left Exit nodes, we can finally delete last frame name
                 if (frameLeft) {
                     frameLeft = false;
-                    frames.removeLast();
+
+                    val frame_name = frames.removeLast();
+                    flowPath.forgetFrame(frame_name);
+                    log.info("removing frame: {}", frame_name);
                 }
 
                 // we must check, if there's inactive nodes used as inputs for this node
@@ -4610,8 +4615,8 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             }else if (differentialFunction instanceof Enter) {
-                if (flowPath.wasExecuted(differentialFunction.getOwnName()))
-                    continue;
+            //    if (flowPath.wasExecuted(differentialFunction.getOwnName()))
+            //        continue;
 
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
@@ -4626,6 +4631,8 @@ public class SameDiff {
                     flowPath.registerFrame(frame_name);
                     frames.addLast(frame_name);
                     inFrame = true;
+
+                    log.info("adding frame: {}", frame_name);
                 }
 
 
@@ -4908,9 +4915,6 @@ public class SameDiff {
             argShapes.append("  Output variable " + func.getVarName() + " is " +
                     Arrays.toString(func.getShape()));
         }
-
-
-        log.info("Executing op " + differentialFunction.opName());
 
         StringBuilder realShapes = new StringBuilder();
         for (val arg : differentialFunction.args()) {
