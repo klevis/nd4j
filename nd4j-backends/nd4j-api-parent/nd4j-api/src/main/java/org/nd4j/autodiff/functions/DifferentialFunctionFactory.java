@@ -792,6 +792,18 @@ public class DifferentialFunctionFactory   {
 
     }
 
+    public SDVariable batchToSpace(SDVariable differentialFunction, SDVariable blocks, SDVariable crops) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new BatchToSpace(sameDiff(), new SDVariable[]{differentialFunction, blocks, crops},true)
+                .outputVariables()[0];
+    }
+
+    public SDVariable spaceToBatch(SDVariable differentialFunction, SDVariable blocks, SDVariable padding) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new BatchToSpace(sameDiff(), new SDVariable[]{differentialFunction, blocks, padding},true)
+                .outputVariables()[0];
+    }
+
     public SDVariable addi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new AddOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
