@@ -48,6 +48,8 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -63,6 +65,7 @@ import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import sun.tools.tree.LessExpression;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -4549,7 +4552,13 @@ public class SameDiff {
         boolean frameLeft = false;
 
         int i = 0;
+        int exec_counter = 0;
         for (; i < funcs.size(); i++) {
+            ++exec_counter;
+
+            if (exec_counter > 1000)
+                break;
+
             val opName = funcs.get(i).opName();
             if (!onBackward && opName.equals(new GradientBackwardsMarker().opName())) {
                 onBackward = true;
@@ -4570,7 +4579,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.info("Executing op {} for node [{}]", opName, ownName);
+            log.info("Step: {}; Executing op {} for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
@@ -4582,12 +4591,16 @@ public class SameDiff {
                     frameLeft = false;
 
                     val frame_name = frames.removeLast();
+                    flowPath.activateFrame(frame_name, false);
                     flowPath.forgetFrame(frame_name);
-                    log.info("removing frame: {}", frame_name);
                 }
 
                 // we must check, if there's inactive nodes used as inputs for this node
                 for (val input : args) {
+                    // Merge is special case, it's possible to have inactive node there. but only one.
+                    if (input.contains("NextIteration") && differentialFunction instanceof Merge)
+                        continue;
+
                     if (!flowPath.isActive(input)) {
                         // propagate inactivity
                         flowPath.markActive(differentialFunction.getOwnName(), false);
@@ -4601,6 +4614,7 @@ public class SameDiff {
                 continue;
 
             differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
+            flowPath.markActive(differentialFunction.getOwnName(), true);
 
             /**
              * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
@@ -4615,8 +4629,8 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             }else if (differentialFunction instanceof Enter) {
-            //    if (flowPath.wasExecuted(differentialFunction.getOwnName()))
-            //        continue;
+              //  if (flowPath.wasExecuted(differentialFunction.getOwnName()))
+              //      continue;
 
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
@@ -4631,8 +4645,6 @@ public class SameDiff {
                     flowPath.registerFrame(frame_name);
                     frames.addLast(frame_name);
                     inFrame = true;
-
-                    log.info("adding frame: {}", frame_name);
                 }
 
 
@@ -4641,13 +4653,23 @@ public class SameDiff {
 
                 val frame_name = frames.getLast();
 
+                if (!flowPath.isFrameActive(frame_name)) {
+                    flowPath.markActive(differentialFunction.getOwnName(), false);
+
+                    // if frame is inactive, lets remove it from queue as well
+                    frameLeft = true;
+                    continue;
+                }
+
                 // Exit node is called in any way, doesn't matters if body was executed or not
                 // so, we're checking if rewind was planned (so, NextIteration was executed before Exit)
                 // and if it's TRUE - we're setting applying rewind by setting loop idx and calling continue
                 if (flowPath.isRewindPlanned(frame_name)) {
                     // just reset loop
                     flowPath.planRewind(frame_name, false);
+                    val currentPosition = i;
                     i = flowPath.getRewindPosition(frame_name);
+                    val startPosition = i + 1;
                     flowPath.setRewindPosition(frame_name, -1);
 
                     continue;
@@ -4666,6 +4688,7 @@ public class SameDiff {
             } else if (differentialFunction instanceof NextIteration) {
                 // this operations merges own input, and schedules rewind to specific Merge node
                 val inputs = getInputVariablesForFunction(differentialFunction);
+                val frame_name = frames.getLast();
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
@@ -4674,8 +4697,6 @@ public class SameDiff {
                 flowPath.incrementNumberOfCycles(differentialFunction.getOwnName());
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                val frame_name = frames.getLast();
 
                 // if NextIteration wasn't skipped with inactive branch, we'll plan rewind for this frame. obviously, only once
                 if (!flowPath.isRewindPlanned(frame_name)) {
@@ -4690,6 +4711,8 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val frame_name = frames.getLast();
+
+                flowPath.activateFrame(frame_name, true);
 
                 // frame_name can be null if this merge node is used for something that's not loop. i.e. switch/merge pair
                 if (frame_name != null)
@@ -4709,6 +4732,9 @@ public class SameDiff {
                     // propagate second input
                     val array = inputs[1].getArr();
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    // nullify executed mark
+                    flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
@@ -4840,6 +4866,14 @@ public class SameDiff {
 
                 Nd4j.getExecutioner().exec(customOp);
 
+                /*
+                if (customOp instanceof LessThanOrEqual) {
+                    log.info("Step: {}; InnerCondition: {} <= {} = {}", exec_counter, customOp.getInputArgument(0), customOp.getInputArgument(1), customOp.getOutputArgument(0));
+                } else if (customOp instanceof LessThan) {
+                    log.info("Step: {}; OuterCondition: {} <= {} = {}", exec_counter, customOp.getInputArgument(0), customOp.getInputArgument(1), customOp.getOutputArgument(0));
+                }
+                */
+
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
                 ops.add(customOp);
@@ -4863,6 +4897,7 @@ public class SameDiff {
                         Accumulation accumulation = (Accumulation) differentialFunction;
 
                         Nd4j.getExecutioner().exec(accumulation, axes);
+
                         if (differentialFunction.outputVariables()[0].getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
                             updateArrayForVarName(var.getVarName(), accumulation.z());
@@ -4887,7 +4922,7 @@ public class SameDiff {
 
 
             //debug
-            printFunction(differentialFunction);
+           // printFunction(differentialFunction);
         }
 
         return new Pair<>(opMap, ops);

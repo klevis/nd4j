@@ -17,6 +17,7 @@ public class FrameState {
 
     private int numberOfEntries = 0;
     private int numberOfExits = 0;
+    private boolean active = false;
 
 
     public FrameState(@NonNull String frame_name) {

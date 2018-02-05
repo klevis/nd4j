@@ -908,9 +908,10 @@ public class TensorFlowImportTest {
 
         //log.info("{}", tg.asFlatPrint());
 
-       // val array = tg.execAndEndResult();
-       // val exp = Nd4j.create(2, 2).assign(15.0);
-       // assertNotNull(array);
-       // assertEquals(exp, array);
+        val array = tg.execAndEndResult();
+        //val array = tg.getVariable("output").getArr();
+        val exp = Nd4j.create(2, 2).assign(15.0);
+        assertNotNull(array);
+        assertEquals(exp, array);
     }
 }

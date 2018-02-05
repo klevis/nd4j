@@ -197,4 +197,24 @@ public class FlowPath {
 
         frames.get(frameName).setRewindPosition(position);
     }
+
+    /**
+     * This method triggers frame state
+     *
+     * @param frameName
+     * @param reallyActivate
+     */
+    public void activateFrame(@NonNull String frameName, boolean reallyActivate) {
+        frames.get(frameName).setActive(reallyActivate);
+    }
+
+    /**
+     * This method returns TRUE if specified frame was activated (as in: Enter/Merge was triggered)
+     *
+     * @param frameName
+     * @return
+     */
+    public boolean isFrameActive(@NonNull String frameName) {
+        return frames.get(frameName).isActive();
+    }
 }
