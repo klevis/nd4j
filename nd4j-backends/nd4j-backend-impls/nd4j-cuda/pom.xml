@@ -276,7 +276,7 @@
             <id>libnd4j-assembly</id>
             <activation>
                 <property>
-                    <name>libnd4j-assembly</name>
+                    <name>libnd4j-cuda-assembly</name>
                 </property>
             </activation>
             <properties>
