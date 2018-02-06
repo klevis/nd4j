@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class NextIteration extends DynamicCustomOp {
-    protected String frame_name;
+    protected String frameName;
 
     @Override
     public String opName() {
@@ -33,11 +33,11 @@ public class NextIteration extends DynamicCustomOp {
     }
 
     public String getFrameName() {
-        return frame_name;
+        return frameName;
     }
 
     public void setFrameName(@NonNull String frameName) {
-        this.frame_name = frameName;
+        this.frameName = frameName;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class NextIteration extends DynamicCustomOp {
 
         if (nodeDef.containsAttr("frame_name")) {
             val attr = nodeDef.getAttrOrThrow("frame_name");
-            this.frame_name = attr.getS().toStringUtf8();
+            this.frameName = attr.getS().toStringUtf8();
         }
     }
 }

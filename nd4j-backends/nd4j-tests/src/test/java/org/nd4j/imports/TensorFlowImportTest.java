@@ -759,14 +759,6 @@ public class TensorFlowImportTest {
     }
 
     @Test
-    public void testPewPew1() {
-        val array = Nd4j.create(1, 1);
-        array.assign(1.0);
-
-        log.info("Assign: {}", array);
-    }
-
-    @Test
     public void testCondMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());

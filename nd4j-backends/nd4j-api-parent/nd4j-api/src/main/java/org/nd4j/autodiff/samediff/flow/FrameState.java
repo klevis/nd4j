@@ -18,9 +18,25 @@ public class FrameState {
     private int numberOfEntries = 0;
     private int numberOfExits = 0;
     private boolean active = false;
+    private int numberOfCycles;
 
 
     public FrameState(@NonNull String frame_name) {
         this.name = frame_name;
+    }
+
+    /**
+     * This method returns number of cycles for this frame
+     * @return
+     */
+    public int getNumberOfCycles() {
+        return numberOfCycles;
+    }
+
+    /**
+     * This method increments number of cycles by 1
+     */
+    public void incrementNumberOfCycles() {
+        numberOfCycles++;
     }
 }

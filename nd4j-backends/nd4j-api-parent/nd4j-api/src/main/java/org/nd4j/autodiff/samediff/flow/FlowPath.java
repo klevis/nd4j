@@ -92,22 +92,20 @@ public class FlowPath {
 
     /**
      * This node increments number of iterations by 1.
-     * This method applicable for while/NextIteration only
      *
      * @param nodeName
      */
-    public void incrementNumberOfCycles(@NonNull String nodeName) {
-        states.get(nodeName).incrementNumberOfCycles();
+    public void incrementNumberOfCycles(@NonNull String frameName) {
+        states.get(frameName).incrementNumberOfCycles();
     }
 
     /**
      * This method returns number of iterations of specified node.
-     * This method applicable for while/NextIteration only
      * @param nodeName
      * @return
      */
-    public long getNumberOfCycles(@NonNull String nodeName) {
-        return states.get(nodeName).getNumberOfCycles();
+    public long getNumberOfCycles(@NonNull String frameName) {
+        return states.get(frameName).getNumberOfCycles();
     }
 
     /**

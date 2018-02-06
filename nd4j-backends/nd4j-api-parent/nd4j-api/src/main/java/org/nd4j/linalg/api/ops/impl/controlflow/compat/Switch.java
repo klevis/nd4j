@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Switch extends DynamicCustomOp {
-    protected String frame_name;
+    protected String frameName;
 
     @Override
     public String opName() {
@@ -32,7 +33,11 @@ public class Switch extends DynamicCustomOp {
     }
 
     public String getFrameName() {
-        return frame_name;
+        return frameName;
+    }
+
+    public void setFrameName(@NonNull String frameName) {
+        this.frameName = frameName;
     }
 
     @Override
@@ -56,7 +61,7 @@ public class Switch extends DynamicCustomOp {
 
         if (nodeDef.containsAttr("frame_name")) {
             val attr = nodeDef.getAttrOrThrow("frame_name");
-            this.frame_name = attr.getS().toStringUtf8();
+            this.frameName = attr.getS().toStringUtf8();
         }
     }
 }

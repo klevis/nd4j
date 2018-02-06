@@ -4628,6 +4628,12 @@ public class SameDiff {
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                if ((int) array.getDouble(0) == 1) {
+                    val frameName = frames.getLast();
+                    // incrementing number of cycles for THIS frame, only if LoopCond is true
+                    flowPath.incrementNumberOfCycles(frameName);
+                }
             }else if (differentialFunction instanceof Enter) {
               //  if (flowPath.wasExecuted(differentialFunction.getOwnName()))
               //      continue;
@@ -4652,6 +4658,9 @@ public class SameDiff {
                 // this is just exit point of graph: it maps own input to own output or rewinds graph to specific position planned at first NextIteration node
 
                 val frame_name = frames.getLast();
+
+                // saving frame_name for backward pass
+                ((Exit) differentialFunction).setFrameName(frame_name);
 
                 if (!flowPath.isFrameActive(frame_name)) {
                     flowPath.markActive(differentialFunction.getOwnName(), false);
@@ -4692,9 +4701,6 @@ public class SameDiff {
 
                 val array = inputs[0].getArr();
                 variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-
-                // incrementing number of cycles for THIS node
-                flowPath.incrementNumberOfCycles(differentialFunction.getOwnName());
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
