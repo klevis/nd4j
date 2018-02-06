@@ -4556,9 +4556,6 @@ public class SameDiff {
         for (; i < funcs.size(); i++) {
             ++exec_counter;
 
-            if (exec_counter > 1000)
-                break;
-
             val opName = funcs.get(i).opName();
             if (!onBackward && opName.equals(new GradientBackwardsMarker().opName())) {
                 onBackward = true;
@@ -5093,7 +5090,7 @@ public class SameDiff {
         }
     }
 
-    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, AtomicInteger idCounter) {
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
         val opName = node.opName();
         val hash = getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
@@ -5103,11 +5100,17 @@ public class SameDiff {
             extras[e] = ((Number) node.getExtraArgs()[e]).floatValue();
         }
 
-
         int[] extraBits = null;
         if (node.opType() == Op.Type.CUSTOM) {
             DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
+        } else if (node instanceof Enter) {
+            // in case of Enter node we'll be storing unique frame reference
+            val frameName = ((Enter) node).getFrameName();
+            if (!framesMap.containsKey(frameName))
+                framesMap.put(frameName, idCounter.incrementAndGet());
+
+            extraBits = new int[]{framesMap.get(frameName).intValue()};
         } else
             extraBits = new int[]{};
 
@@ -5128,7 +5131,7 @@ public class SameDiff {
                 val pair = parseVariable(input.getVarName());
                 if (!reverseMap.containsKey(pair.getFirst())) {
                     if (pair.getFirst().contains("NextIteration")) {
-                        // forward declaration
+                        // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
                         int fwdNodeId = idCounter.incrementAndGet();
                         forwardMap.put(pair.getFirst(), fwdNodeId);
                         reverseMap.put(pair.getFirst(), fwdNodeId);
@@ -5208,6 +5211,7 @@ public class SameDiff {
         List<SDVariable> variableList = new ArrayList<>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
+        val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
         for (val variable : variables()) {
@@ -5236,7 +5240,7 @@ public class SameDiff {
 
         //add functions
         for (val func : functionInstancesById.values()) {
-            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, idCounter));
+            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter));
         }
 
         // we're dumping scopes now
@@ -5269,7 +5273,7 @@ public class SameDiff {
 
             //add functions
             for (val func : scope.getValue().functionInstancesById.values()) {
-                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, idCounter));
+                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter));
             }
 
         }
