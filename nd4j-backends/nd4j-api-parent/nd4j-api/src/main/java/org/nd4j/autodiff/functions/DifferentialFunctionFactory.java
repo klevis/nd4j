@@ -5,6 +5,7 @@ import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -792,15 +793,15 @@ public class DifferentialFunctionFactory   {
 
     }
 
-    public SDVariable batchToSpace(SDVariable differentialFunction, SDVariable blocks, SDVariable crops) {
+    public SDVariable batchToSpace(SDVariable differentialFunction, INDArray blocks, INDArray crops) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return new BatchToSpace(sameDiff(), new SDVariable[]{differentialFunction, blocks, crops},true)
+        return new BatchToSpace(sameDiff(), new SDVariable[]{differentialFunction}, blocks, crops, true)
                 .outputVariables()[0];
     }
 
-    public SDVariable spaceToBatch(SDVariable differentialFunction, SDVariable blocks, SDVariable padding) {
+    public SDVariable spaceToBatch(SDVariable differentialFunction, INDArray blocks, INDArray padding) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return new BatchToSpace(sameDiff(), new SDVariable[]{differentialFunction, blocks, padding},true)
+        return new SpaceToBatch(sameDiff(), new SDVariable[]{differentialFunction}, blocks, padding, true)
                 .outputVariables()[0];
     }
 

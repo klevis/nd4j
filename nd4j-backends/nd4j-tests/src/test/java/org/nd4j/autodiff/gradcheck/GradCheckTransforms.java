@@ -52,9 +52,6 @@ public class GradCheckTransforms {
         SameDiff sd = SameDiff.create();
 
         SDVariable sdInput = sd.var("in", inputShape);
-        SDVariable sdBlocks = sd.var("blocks", blockShape);
-        SDVariable sdCrops = sd.var("crops", cropShape);
-
 
         INDArray expOut = Nd4j.create(1, 2, 2, 1);
         DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
@@ -63,10 +60,9 @@ public class GradCheckTransforms {
         Nd4j.getExecutioner().exec(op);
 
         sd.associateArrayWithVariable(input, sdInput);
-        sd.associateArrayWithVariable(blocks, sdBlocks);
-        sd.associateArrayWithVariable(crops, sdCrops);
 
-        SDVariable t = sd.batchToSpace(sdInput, sdBlocks, sdCrops);
+
+        SDVariable t = sd.batchToSpace(sdInput, blocks, crops);
         System.out.println(Arrays.toString(t.getShape()));
 
         SDVariable loss = sd.mean("loss", t);

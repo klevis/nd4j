@@ -45,15 +45,20 @@ import java.util.List;
  */
 public class BatchToSpace extends BaseDynamicTransformOp {
 
+    protected INDArray blocks;
+    protected INDArray crops;
+
     public BatchToSpace() {}
 
-    public BatchToSpace(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public BatchToSpace(SameDiff sameDiff, SDVariable[] args, INDArray blocks, INDArray crops, boolean inPlace) {
         super(sameDiff, args, inPlace);
+
+        this.blocks = blocks;
+        this.crops = crops;
+
+        this.addInputArgument(args[0].getArr(), blocks, crops);
     }
 
-    public BatchToSpace(INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
-    }
 
     @Override
     public String opName() {
@@ -72,10 +77,7 @@ public class BatchToSpace extends BaseDynamicTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of batch to space is space to batch with same blocks and padding as crops
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        SDVariable[] inputArgs = args();
-        SDVariable blocks = inputArgs[1];
-        SDVariable padding = inputArgs[2];
-        return Collections.singletonList(sameDiff.spaceToBatch(gradient, blocks, padding));
+        return Collections.singletonList(sameDiff.batchToSpace(gradient, blocks, crops));
 
     }
 
