@@ -15,9 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class NextIteration extends DynamicCustomOp {
-    protected String frameName;
-
+public class NextIteration extends BaseCompatOp {
     @Override
     public String opName() {
         return "next_iteration";
@@ -30,14 +28,6 @@ public class NextIteration extends DynamicCustomOp {
         }
         else
             return Collections.emptyList();
-    }
-
-    public String getFrameName() {
-        return frameName;
-    }
-
-    public void setFrameName(@NonNull String frameName) {
-        this.frameName = frameName;
     }
 
     @Override
@@ -58,10 +48,5 @@ public class NextIteration extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-
-        if (nodeDef.containsAttr("frame_name")) {
-            val attr = nodeDef.getAttrOrThrow("frame_name");
-            this.frameName = attr.getS().toStringUtf8();
-        }
     }
 }

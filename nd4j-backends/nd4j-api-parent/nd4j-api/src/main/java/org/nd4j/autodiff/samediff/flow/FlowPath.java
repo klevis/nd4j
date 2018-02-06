@@ -96,7 +96,7 @@ public class FlowPath {
      * @param nodeName
      */
     public void incrementNumberOfCycles(@NonNull String frameName) {
-        states.get(frameName).incrementNumberOfCycles();
+        frames.get(frameName).incrementNumberOfCycles();
     }
 
     /**
